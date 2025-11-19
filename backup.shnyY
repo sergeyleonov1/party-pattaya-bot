@@ -1,0 +1,5 @@
+#!/bin/bash
+BACKUP_DIR="$HOME/Backups/Bot_$(date +%Y-%m-%d_%H-%M-%S)"
+mkdir -p "$BACKUP_DIR"
+cp -r ~/Desktop/"Bot Party Pattaya"/* "$BACKUP_DIR/"
+echo "Backup created: $BACKUP_DIR"
