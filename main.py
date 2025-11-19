@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+openai_client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"), http_client=None)
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s', handlers=[logging.FileHandler('bot.log', encoding='utf-8'), logging.StreamHandler()])
 logger = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ WELCOME = """Привет! 👋
 📞 Контакты: @Party_Pattaya | +66633633407
 🌐 Сайт: https://partypattayacity.com"""
 
-SERVICES = {"yacht": {"name": "🛥️ Аренда яхты", "price": "\$500-2000"}, "party": {"name": "🎊 Организация вечеринки", "price": "\$1000-5000"}, "vip": {"name": "💎 VIP сервис", "price": "\$2000-10000"}, "tour": {"name": "🗺️ Экскурсия", "price": "\$50-500"}, "transfer": {"name": "🚗 Трансфер", "price": "\$20-200"}}
+SERVICES = {"yacht": {"name": "🛥️ Аренда яхты", "price": "$500-2000"}, "party": {"name": "🎊 Организация вечеринки", "price": "$1000-5000"}, "vip": {"name": "💎 VIP сервис", "price": "$2000-10000"}, "tour": {"name": "🗺️ Экскурсия", "price": "$50-500"}, "transfer": {"name": "🚗 Трансфер", "price": "$20-200"}}
 
 user_profiles = {}
 user_history = {}
