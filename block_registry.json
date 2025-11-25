@@ -1,0 +1,87 @@
+{
+  "version": "3.0",
+  "owner": "Сергей Леонов",
+  "contacts": {
+    "owner": "Сергей Леонов",
+    "contact": "@Party_Pattaya",
+    "whatsapp": "+66-633-633-407",
+    "email": "Liliya@partypattayacity.com"
+  },
+  "created_at": "2025-11-25T19:31:57.856174",
+  "last_updated": "2025-11-25T21:47:09.362553",
+  "blocks": {
+    "block_01": {
+      "id": 1,
+      "name": "Registry & Recovery System",
+      "description": "Ультра-полная система регистрации и восстановления блоков (19 функций)",
+      "file_path": "blocks_ready/block_01_registry.py",
+      "absolute_path": "/Users/polina4/Desktop/Bot Party Pattaya/blocks_ready/block_01_registry.py",
+      "status": "ready",
+      "file_size": 36805,
+      "file_hash": "efa2f87d35c7a9cf1e7ffaf619b5f16049a5d6a4a32141d489aacd6f0ad30828",
+      "dependencies": [],
+      "dependents": [
+        36
+      ],
+      "chat_url": "https://claude.ai/chat/acbf772e-c050-4502-b524-e6950bd7c233",
+      "gdrive_url": "",
+      "created_at": "2025-11-25T19:31:57.856279",
+      "last_modified": "2025-11-25T19:31:57.856280",
+      "versions": [
+        {
+          "version": "1.0",
+          "hash": "efa2f87d35c7a9cf1e7ffaf619b5f16049a5d6a4a32141d489aacd6f0ad30828",
+          "timestamp": "2025-11-25T19:31:57.856281",
+          "size": 36805,
+          "previous_hash": null
+        }
+      ]
+    },
+    "block_36": {
+      "id": 36,
+      "name": "Universal Protection System",
+      "description": "Защита всех файлов системы (13 функций)",
+      "file_path": "blocks_ready/block_36_protection.py",
+      "absolute_path": "/Users/polina4/Desktop/Bot Party Pattaya/blocks_ready/block_36_protection.py",
+      "status": "ready",
+      "file_size": 1544,
+      "file_hash": "9e6722cc0105287d614f3d40689dbd5b912398233faee45084210d4d4101a02d",
+      "dependencies": [
+        1
+      ],
+      "dependents": [],
+      "chat_url": "https://claude.ai/chat/acbf772e-c050-4502-b524-e6950bd7c233",
+      "gdrive_url": "",
+      "created_at": "2025-11-25T21:47:09.361641",
+      "last_modified": "2025-11-25T21:47:09.361654",
+      "versions": [
+        {
+          "version": "1.0",
+          "hash": "9e6722cc0105287d614f3d40689dbd5b912398233faee45084210d4d4101a02d",
+          "timestamp": "2025-11-25T21:47:09.361655",
+          "size": 1544,
+          "previous_hash": null
+        }
+      ]
+    }
+  },
+  "chat_links": [
+    {
+      "url": "https://claude.ai/chat/acbf772e-c050-4502-b524-e6950bd7c233",
+      "description": "Блок 1: Registry & Recovery System",
+      "saved_at": "2025-11-25T19:31:57.856284"
+    },
+    {
+      "url": "https://claude.ai/chat/acbf772e-c050-4502-b524-e6950bd7c233",
+      "description": "Блок 36: Universal Protection System",
+      "saved_at": "2025-11-25T21:47:09.361659"
+    }
+  ],
+  "google_drive_links": {
+    "blocks": [],
+    "backups": [],
+    "docs": [],
+    "chats": []
+  },
+  "inter_block_api": {}
+}

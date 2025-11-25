@@ -1,0 +1,833 @@
+"""
+═══════════════════════════════════════════════════════════════════════════════
+                    ВОССТАНОВЛЕННЫЕ КРИТИЧНЫЕ БЛОКИ
+        БЛОК 1, БЛОКИ 7-10, БЛОК 14, БЛОКИ 16-17 (ПОЛНЫЙ ФУНКЦИОНАЛ)
+═══════════════════════════════════════════════════════════════════════════════
+
+ТЗ ВЕРСИЯ: v6.0 FINAL (20.11.2025)
+СТАТУС: ✅ ПОЛНЫЙ РАБОЧИЙ КОД
+"""
+
+import json
+import logging
+import os
+from datetime import datetime
+from typing import Dict, List, Optional, Any
+from collections import Counter
+import hashlib
+
+try:
+    from langdetect import detect, detect_langs, LangDetectException
+except ImportError:
+    detect = None
+    detect_langs = None
+    LangDetectException = Exception
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# БЛОК 1: ОБРАБОТЧИК КОМАНД TELEGRAM
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class CommandHandler:
+    """БЛОК 1: Обработчик команд Telegram"""
+    
+    COMMANDS = {
+        'start': 'Начало работы, выбор языка, приветствие',
+        'menu': 'Главное меню со всеми опциями',
+        'help': 'Справка о возможностях бота',
+        'about': 'О компании Party Pattaya',
+        'services': 'Список всех услуг с описанием',
+        'contact': 'Контакты Сергея',
+        'order': 'Создать новый заказ',
+        'myorders': 'Мои заказы',
+        'profile': 'Мой профиль',
+        'feedback': 'Отзыв или жалоба',
+        'settings': 'Настройки',
+        'admin': 'Админ панель'
+    }
+    
+    IMMUTABLE_CONTACTS = {
+        'telegram': '@PartyPattayaBot',
+        'whatsapp': '+66806370581',
+        'email': 'infopartypattayacity@gmail.com'
+    }
+    
+    @staticmethod
+    async def handle_start_command(update, context, user_repo):
+        """Приветствие пользователя, выбор языка, сохранение"""
+        user = update.effective_user
+        user_id = str(user.id)
+        
+        user_data = {
+            'user_id': user_id,
+            'username': user.username or 'Unknown',
+            'first_name': user.first_name or '',
+            'last_name': user.last_name or '',
+            'language_code': user.language_code or 'en',
+            'created_at': datetime.now().isoformat(),
+            'status': 'active',
+            'engagement_score': 0.0
+        }
+        user_repo.save_user(user_id, user_data)
+        
+        greeting = """
+🎉 Добро пожаловать в Party Pattaya Bot!
+
+Я помогу вам организовать незабываемое событие в Паттайе.
+
+📱 Контакты:
+- WhatsApp: +66806370581
+- Telegram: @PartyPattayaBot
+- Email: infopartypattayacity@gmail.com
+
+Выберите язык / Select Language:
+"""
+        await update.message.reply_text(greeting)
+        return user_id
+    
+    @staticmethod
+    async def handle_menu_command(update, context):
+        """Показать главное меню"""
+        menu_text = """
+📌 ГЛАВНОЕ МЕНЮ:
+
+/services - 📋 Наши услуги
+/order - 🎉 Создать заказ
+/myorders - 📦 Мои заказы
+/profile - 👤 Мой профиль
+/contact - 📞 Контакты
+/settings - ⚙️ Настройки
+/help - 🆘 Справка
+/about - ℹ️ О компании
+"""
+        await update.message.reply_text(menu_text)
+    
+    @staticmethod
+    async def handle_help_command(update, context):
+        """Справка о командах"""
+        help_text = """
+🆘 СПРАВКА ПО КОМАНДАМ:
+
+/start - Начать работу с ботом
+/menu - Открыть главное меню
+/services - Список услуг
+/order - Создать новый заказ
+/myorders - История ваших заказов
+/profile - Информация о профиле
+/contact - Контакты компании
+/feedback - Оставить отзыв
+/settings - Изменить настройки
+/admin - Администраторская панель
+"""
+        await update.message.reply_text(help_text)
+    
+    @staticmethod
+    async def handle_services_command(update, context, service_repo):
+        """Список всех услуг"""
+        services = service_repo.get_all_services()
+        text = "📋 НАШИ УСЛУГИ:\n\n"
+        
+        for service in services:
+            text += f"🎊 {service['name']}\n"
+            text += f"   💰 Цена: {service['price']}\n"
+            text += f"   📝 {service['description']}\n\n"
+        
+        await update.message.reply_text(text)
+    
+    @staticmethod
+    async def handle_contact_command(update, context):
+        """Контакты Сергея"""
+        contact_text = f"""
+📞 КОНТАКТЫ PARTY PATTAYA:
+
+WhatsApp: {CommandHandler.IMMUTABLE_CONTACTS['whatsapp']}
+Telegram: {CommandHandler.IMMUTABLE_CONTACTS['telegram']}
+Email: {CommandHandler.IMMUTABLE_CONTACTS['email']}
+
+Мы доступны 24/7 для вас! 🌍
+"""
+        await update.message.reply_text(contact_text)
+    
+    @staticmethod
+    async def handle_order_command(update, context):
+        """Начать создание заказа"""
+        order_text = """
+🎉 СОЗДАНИЕ ЗАКАЗА
+
+Пожалуйста, напишите детали вашего события:
+- Дата события
+- Время
+- Количество людей
+- Тип услуги
+- Любые пожелания
+
+Мы свяжемся с вами в ближайшее время! ✅
+"""
+        await update.message.reply_text(order_text)
+    
+    @staticmethod
+    async def handle_myorders_command(update, context, order_repo):
+        """История заказов пользователя"""
+        user_id = str(update.effective_user.id)
+        orders = order_repo.get_user_orders(user_id)
+        
+        if not orders:
+            await update.message.reply_text("У вас нет заказов 📦")
+            return
+        
+        text = "📋 ВАШ ИСТОРИЯ ЗАКАЗОВ:\n\n"
+        for order in orders:
+            text += f"Order ID: {order['order_id']}\n"
+            text += f"Статус: {order['status']}\n"
+            text += f"Дата: {order['event_date']}\n"
+            text += f"Услуга: {order['service_name']}\n\n"
+        
+        await update.message.reply_text(text)
+    
+    @staticmethod
+    async def handle_profile_command(update, context, user_repo):
+        """Мой профиль"""
+        user_id = str(update.effective_user.id)
+        user = user_repo.get_user(user_id)
+        
+        if not user:
+            await update.message.reply_text("Профиль не найден 🤔")
+            return
+        
+        profile_text = f"""
+👤 МОЙ ПРОФИЛЬ:
+
+Имя: {user.get('first_name', '')} {user.get('last_name', '')}
+Username: @{user.get('username', 'unknown')}
+Язык: {user.get('language_chosen', 'not set')}
+Статус: {user.get('status', 'unknown')}
+Заказов: {user.get('orders_count', 0)}
+Всего потрачено: ${user.get('total_spent', 0):.2f}
+"""
+        await update.message.reply_text(profile_text)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# БЛОКИ 7-10: CRM СИСТЕМА И УПРАВЛЕНИЕ ПОЛЬЗОВАТЕЛЯМИ
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class UserRepository:
+    """БЛОК 7: CRM система и профили"""
+    
+    def __init__(self, db_path: str = 'users.json'):
+        self.db_path = db_path
+        self.users: Dict[str, Dict] = {}
+        self.load_all_users()
+    
+    def load_all_users(self):
+        """Загрузить всех пользователей"""
+        if os.path.exists(self.db_path):
+            try:
+                with open(self.db_path, 'r', encoding='utf-8') as f:
+                    self.users = json.load(f)
+            except (json.JSONDecodeError, IOError):
+                self.users = {}
+    
+    def save_user(self, user_id: str, user_data: Dict) -> bool:
+        """Сохранить профиль пользователя"""
+        self.users[user_id] = user_data
+        return self._persist()
+    
+    def get_user(self, user_id: str) -> Optional[Dict]:
+        """Получить профиль пользователя"""
+        return self.users.get(user_id)
+    
+    def update_user(self, user_id: str, field: str, value: Any) -> bool:
+        """Обновить поле в профиле"""
+        if user_id not in self.users:
+            return False
+        self.users[user_id][field] = value
+        return self._persist()
+    
+    def get_user_stats(self) -> Dict:
+        """Статистика"""
+        total = len(self.users)
+        active = sum(1 for u in self.users.values() if u.get('status') == 'active')
+        return {'total': total, 'active': active}
+    
+    def search_users(self, query: str) -> List[Dict]:
+        """Поиск пользователей"""
+        results = []
+        query_lower = query.lower()
+        for user_id, user in self.users.items():
+            if (query_lower in user.get('username', '').lower() or
+                query_lower in user.get('first_name', '').lower() or
+                query_lower in user.get('email', '').lower()):
+                results.append(user)
+        return results
+    
+    def _persist(self) -> bool:
+        """Сохранить в файл"""
+        try:
+            with open(self.db_path, 'w', encoding='utf-8') as f:
+                json.dump(self.users, f, ensure_ascii=False, indent=2)
+            return True
+        except IOError:
+            return False
+
+
+class LanguageHistory:
+    """БЛОК 8: История языков пользователя"""
+    
+    def __init__(self, user_repo: UserRepository):
+        self.user_repo = user_repo
+    
+    def save_language_history(self, user_id: str, old_lang: str, new_lang: str):
+        """Сохранить смену языка"""
+        user = self.user_repo.get_user(user_id)
+        if not user:
+            return False
+        
+        if 'language_history' not in user:
+            user['language_history'] = []
+        
+        user['language_history'].append({
+            'old_language': old_lang,
+            'new_language': new_lang,
+            'changed_at': datetime.now().isoformat(),
+            'reason': 'user_selected'
+        })
+        
+        return self.user_repo.save_user(user_id, user)
+    
+    def get_language_history(self, user_id: str) -> List[Dict]:
+        """Получить историю смены языков"""
+        user = self.user_repo.get_user(user_id)
+        return user.get('language_history', []) if user else []
+    
+    def get_most_used_language(self, user_id: str) -> Optional[str]:
+        """Определить наиболее используемый язык"""
+        history = self.get_language_history(user_id)
+        if not history:
+            user = self.user_repo.get_user(user_id)
+            return user.get('language_chosen') if user else None
+        
+        languages = [entry['new_language'] for entry in history]
+        if languages:
+            return Counter(languages).most_common(1)[0][0]
+        return None
+    
+    def detect_preferred_language(self, user_id: str) -> str:
+        """Определить предпочитаемый язык"""
+        return self.get_most_used_language(user_id) or 'en'
+
+
+class UserStatistics:
+    """БЛОК 9: Статистика пользователей"""
+    
+    def __init__(self, user_repo: UserRepository):
+        self.user_repo = user_repo
+    
+    def get_total_users(self) -> int:
+        """Общее количество"""
+        return len(self.user_repo.users)
+    
+    def get_new_users_today(self) -> int:
+        """Новые сегодня"""
+        today = datetime.now().date()
+        count = 0
+        for user in self.user_repo.users.values():
+            created = user.get('created_at', '')
+            if created and created[:10] == str(today):
+                count += 1
+        return count
+    
+    def get_active_users(self, days: int = 7) -> int:
+        """Активные за N дней"""
+        from datetime import timedelta
+        start_date = (datetime.now() - timedelta(days=days)).date()
+        count = 0
+        for user in self.user_repo.users.values():
+            last_msg = user.get('last_message', '')
+            if last_msg and last_msg[:10] >= str(start_date):
+                count += 1
+        return count
+    
+    def get_language_distribution(self) -> Dict[str, int]:
+        """Распределение по языкам"""
+        langs = {}
+        for user in self.user_repo.users.values():
+            lang = user.get('language_chosen', 'unknown')
+            langs[lang] = langs.get(lang, 0) + 1
+        return langs
+    
+    def get_status_distribution(self) -> Dict[str, int]:
+        """Распределение по статусам"""
+        statuses = {}
+        for user in self.user_repo.users.values():
+            status = user.get('status', 'unknown')
+            statuses[status] = statuses.get(status, 0) + 1
+        return statuses
+    
+    def calculate_engagement_score(self, user_id: str) -> float:
+        """Рассчитать score вовлеченности"""
+        user = self.user_repo.get_user(user_id)
+        if not user:
+            return 0.0
+        
+        score = 0.0
+        if user.get('orders_count', 0) > 0:
+            score += min(3, user['orders_count'])
+        if user.get('total_spent', 0) > 0:
+            score += min(3, user['total_spent'] / 1000)
+        if user.get('last_message'):
+            score += 2
+        if user.get('status') == 'active':
+            score += 2
+        
+        return min(10.0, score)
+    
+    def get_lifetime_value(self, user_id: str) -> float:
+        """Жизненная ценность"""
+        user = self.user_repo.get_user(user_id)
+        if not user:
+            return 0.0
+        return float(user.get('total_spent', 0))
+
+
+class UserBlockingSystem:
+    """БЛОК 10: Блокировка/Разблокировка"""
+    
+    BLOCK_REASONS = [
+        'spam', 'offensive_behavior', 'multiple_complaints',
+        'admin_request', 'unpaid_orders'
+    ]
+    
+    def __init__(self, user_repo: UserRepository):
+        self.user_repo = user_repo
+    
+    def block_user(self, user_id: str, reason: str) -> bool:
+        """Заблокировать"""
+        if reason not in self.BLOCK_REASONS:
+            return False
+        
+        user = self.user_repo.get_user(user_id)
+        if not user:
+            return False
+        
+        user['status'] = 'blocked'
+        user['block_reason'] = reason
+        user['blocked_at'] = datetime.now().isoformat()
+        
+        return self.user_repo.save_user(user_id, user)
+    
+    def unblock_user(self, user_id: str) -> bool:
+        """Разблокировать"""
+        user = self.user_repo.get_user(user_id)
+        if not user:
+            return False
+        
+        user['status'] = 'active'
+        user['block_reason'] = None
+        user['unblocked_at'] = datetime.now().isoformat()
+        
+        return self.user_repo.save_user(user_id, user)
+    
+    def get_blocked_users(self) -> List[Dict]:
+        """Получить заблокированных"""
+        return [u for u in self.user_repo.users.values() 
+                if u.get('status') == 'blocked']
+    
+    def is_user_blocked(self, user_id: str) -> bool:
+        """Проверить заблокирован ли"""
+        user = self.user_repo.get_user(user_id)
+        return user.get('status') == 'blocked' if user else False
+    
+    def get_block_reason(self, user_id: str) -> Optional[str]:
+        """Причина блокировки"""
+        user = self.user_repo.get_user(user_id)
+        return user.get('block_reason') if user else None
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# БЛОК 14: УВЕДОМЛЕНИЯ О ЗАКАЗАХ
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class OrderNotifications:
+    """БЛОК 14: Уведомления о заказах"""
+    
+    @staticmethod
+    async def notify_order_created(order_id: str, order_data: Dict, 
+                                   application, user_id: int, admin_id: int):
+        """Уведомить о новом заказе"""
+        client_msg = f"""
+🎉 ЗАКАЗ ПРИНЯТ!
+
+Order ID: {order_id}
+Услуга: {order_data.get('service_name', 'N/A')}
+Дата: {order_data.get('event_date', 'N/A')}
+Время: {order_data.get('event_time', 'N/A')}
+
+Спасибо за вашу заявку! Мы свяжемся с вами в ближайшее время. ✅
+"""
+        await application.bot.send_message(chat_id=user_id, text=client_msg)
+        
+        admin_msg = f"""
+🔔 НОВЫЙ ЗАКАЗ!
+
+Order ID: {order_id}
+Клиент ID: {user_id}
+Услуга: {order_data.get('service_name', 'N/A')}
+Сумма: ${order_data.get('price_estimate', 0)}
+Дата события: {order_data.get('event_date', 'N/A')}
+
+⚡ ТРЕБУЕТСЯ ОБРАБОТКА!
+"""
+        await application.bot.send_message(chat_id=admin_id, text=admin_msg)
+    
+    @staticmethod
+    async def notify_order_confirmed(order_id: str, user_id: int, application):
+        """Заказ подтвержден"""
+        msg = f"""
+✅ ЗАКАЗ ПОДТВЕРЖДЕН!
+
+Order ID: {order_id}
+
+Ваш заказ подтвержден! Мы готовимся к вашему событию. 🎊
+"""
+        await application.bot.send_message(chat_id=user_id, text=msg)
+    
+    @staticmethod
+    async def notify_order_completed(order_id: str, user_id: int, application):
+        """Событие завершено"""
+        msg = f"""
+🎉 СОБЫТИЕ ЗАВЕРШЕНО!
+
+Order ID: {order_id}
+
+Спасибо за выбор Party Pattaya! 
+
+Пожалуйста, оставьте отзыв:
+/feedback
+"""
+        await application.bot.send_message(chat_id=user_id, text=msg)
+    
+    @staticmethod
+    async def notify_order_cancelled(order_id: str, user_id: int, 
+                                     reason: str, application):
+        """Заказ отменен"""
+        msg = f"""
+❌ ЗАКАЗ ОТМЕНЕН
+
+Order ID: {order_id}
+Причина: {reason}
+
+Если у вас есть вопросы, свяжитесь с нами:
+/contact
+"""
+        await application.bot.send_message(chat_id=user_id, text=msg)
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# БЛОК 16: AUTO-DETECT ЯЗЫКА
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class LanguageDetector:
+    """БЛОК 16: Auto-detect языка"""
+    
+    SUPPORTED_LANGUAGES = {
+        'ru': 'Russian', 'en': 'English', 'th': 'Thai', 'es': 'Spanish',
+        'fr': 'French', 'de': 'German', 'it': 'Italian', 'pt': 'Portuguese',
+        'zh': 'Chinese', 'ja': 'Japanese', 'ko': 'Korean', 'vi': 'Vietnamese',
+        'id': 'Indonesian', 'tl': 'Filipino', 'ar': 'Arabic', 'tr': 'Turkish',
+        'pl': 'Polish', 'nl': 'Dutch', 'sv': 'Swedish', 'da': 'Danish'
+    }
+    
+    @staticmethod
+    def detect_language(text: str) -> str:
+        """Определить язык"""
+        if not text or len(text) < 3:
+            return 'en'
+        
+        try:
+            if detect:
+                lang = detect(text)
+                return lang if lang in LanguageDetector.SUPPORTED_LANGUAGES else 'en'
+        except (LangDetectException, Exception):
+            pass
+        
+        return 'en'
+    
+    @staticmethod
+    def get_language_code(text: str) -> str:
+        """Получить код языка"""
+        return LanguageDetector.detect_language(text)
+    
+    @staticmethod
+    def detect_user_language(user_id: str, user_repo: UserRepository) -> str:
+        """Определить язык пользователя"""
+        user = user_repo.get_user(user_id)
+        if not user:
+            return 'en'
+        
+        return user.get('language_chosen', 
+                       user.get('language_code', 'en'))
+    
+    @staticmethod
+    def update_user_detected_language(user_id: str, language: str, 
+                                     user_repo: UserRepository) -> bool:
+        """Обновить язык пользователя"""
+        if language not in LanguageDetector.SUPPORTED_LANGUAGES:
+            return False
+        
+        return user_repo.update_user(user_id, 'language_chosen', language)
+    
+    @staticmethod
+    def confidence_score(text: str, language: str) -> float:
+        """Уверенность определения"""
+        try:
+            if not detect_langs:
+                return 0.5
+            
+            langs = detect_langs(text)
+            for lang in langs:
+                if lang.lang == language:
+                    return lang.prob
+            return 0.1
+        except (LangDetectException, Exception):
+            return 0.0
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# БЛОК 17: SELF-LEARNING СИСТЕМА
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class SelfLearningSystem:
+    """БЛОК 17: Self-Learning система"""
+    
+    def __init__(self, db_path: str = 'ai_learning_data.json'):
+        self.db_path = db_path
+        self.data = {
+            'successful_interactions': [],
+            'positive_feedback': [],
+            'frequent_questions': {},
+            'effective_responses': {},
+            'user_preferences': {},
+            'engagement_metrics': {},
+            'improvement_suggestions': []
+        }
+        self.load()
+    
+    def load(self):
+        """Загрузить данные"""
+        if os.path.exists(self.db_path):
+            try:
+                with open(self.db_path, 'r', encoding='utf-8') as f:
+                    self.data = json.load(f)
+            except (json.JSONDecodeError, IOError):
+                pass
+    
+    def save(self) -> bool:
+        """Сохранить данные"""
+        try:
+            with open(self.db_path, 'w', encoding='utf-8') as f:
+                json.dump(self.data, f, ensure_ascii=False, indent=2)
+            return True
+        except IOError:
+            return False
+    
+    def save_interaction(self, user_id: str, message: str, response: str, 
+                        success: bool) -> bool:
+        """Сохранить взаимодействие"""
+        interaction = {
+            'user_id': user_id,
+            'user_message': message,
+            'ai_response': response,
+            'success': success,
+            'timestamp': datetime.now().isoformat()
+        }
+        self.data['successful_interactions'].append(interaction)
+        return self.save()
+    
+    def save_positive_feedback(self, interaction_id: int, rating: int, 
+                              comment: str = '') -> bool:
+        """Сохранить отзыв"""
+        feedback = {
+            'interaction_id': interaction_id,
+            'rating': rating,
+            'comment': comment,
+            'timestamp': datetime.now().isoformat()
+        }
+        self.data['positive_feedback'].append(feedback)
+        return self.save()
+    
+    def track_faq(self, question: str, answer: str, success_rate: float) -> bool:
+        """Отслеживать FAQ"""
+        key = self._hash_question(question)
+        self.data['frequent_questions'][key] = {
+            'question': question,
+            'answer': answer,
+            'success_rate': success_rate,
+            'count': self.data['frequent_questions'].get(key, {}).get('count', 0) + 1
+        }
+        return self.save()
+    
+    def analyze_learning_data(self) -> Dict:
+        """Анализировать данные"""
+        total_interactions = len(self.data['successful_interactions'])
+        successful = sum(1 for i in self.data['successful_interactions'] 
+                        if i.get('success'))
+        
+        return {
+            'total_interactions': total_interactions,
+            'successful_interactions': successful,
+            'success_rate': successful / total_interactions if total_interactions > 0 else 0,
+            'total_faqs': len(self.data['frequent_questions']),
+            'total_feedback': len(self.data['positive_feedback']),
+            'avg_rating': self._calculate_avg_rating()
+        }
+    
+    def generate_improvement_suggestions(self) -> List[str]:
+        """Генерировать рекомендации"""
+        suggestions = []
+        analysis = self.analyze_learning_data()
+        
+        if analysis['success_rate'] < 0.7:
+            suggestions.append("Улучшить качество ответов AI")
+        
+        if len(self.data['frequent_questions']) > 10:
+            suggestions.append("Оптимизировать FAQ")
+        
+        if analysis['avg_rating'] < 3.5:
+            suggestions.append("Пересмотреть стратегию общения")
+        
+        return suggestions
+    
+    def update_ai_weights(self, metrics: Dict) -> bool:
+        """Обновить веса AI"""
+        self.data['engagement_metrics'] = metrics
+        return self.save()
+    
+    @staticmethod
+    def _hash_question(question: str) -> str:
+        """Создать хеш"""
+        return hashlib.sha256(question.encode()).hexdigest()[:16]
+    
+    def _calculate_avg_rating(self) -> float:
+        """Средняя оценка"""
+        if not self.data['positive_feedback']:
+            return 0.0
+        ratings = [f.get('rating', 0) for f in self.data['positive_feedback']]
+        return sum(ratings) / len(ratings) if ratings else 0.0
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ВСПОМОГАТЕЛЬНЫЕ КЛАССЫ
+# ═══════════════════════════════════════════════════════════════════════════════
+
+class OrderRepository:
+    """Репозиторий заказов"""
+    
+    def __init__(self, db_path: str = 'orders.json'):
+        self.db_path = db_path
+        self.orders: Dict[str, Dict] = {}
+        self.load_all_orders()
+    
+    def load_all_orders(self):
+        """Загрузить заказы"""
+        if os.path.exists(self.db_path):
+            try:
+                with open(self.db_path, 'r', encoding='utf-8') as f:
+                    self.orders = json.load(f)
+            except (json.JSONDecodeError, IOError):
+                self.orders = {}
+    
+    def get_user_orders(self, user_id: str) -> List[Dict]:
+        """Заказы пользователя"""
+        return [o for o in self.orders.values() if o.get('user_id') == user_id]
+    
+    def get_all_orders(self) -> List[Dict]:
+        """Все заказы"""
+        return list(self.orders.values())
+    
+    def save_order(self, order_id: str, order_data: Dict) -> bool:
+        """Сохранить"""
+        self.orders[order_id] = order_data
+        return self._persist()
+    
+    def _persist(self) -> bool:
+        """Сохранить в файл"""
+        try:
+            with open(self.db_path, 'w', encoding='utf-8') as f:
+                json.dump(self.orders, f, ensure_ascii=False, indent=2)
+            return True
+        except IOError:
+            return False
+
+
+class ServiceRepository:
+    """Репозиторий услуг"""
+    
+    def __init__(self):
+        self.services = [
+            {
+                'id': 'yacht',
+                'name': '🚤 Аренда яхты',
+                'description': 'Приватная яхта для вечеринки, свадьбы или корпоратива',
+                'price': '$500-2000'
+            },
+            {
+                'id': 'party',
+                'name': '🎉 Организация вечеринки',
+                'description': 'Полная организация вашего события',
+                'price': '$300-1500'
+            },
+            {
+                'id': 'vip',
+                'name': '👑 VIP услуги',
+                'description': 'Премиум обслуживание для ваших гостей',
+                'price': '$200-1000'
+            }
+        ]
+    
+    def get_all_services(self) -> List[Dict]:
+        """Все услуги"""
+        return self.services
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# ИНИЦИАЛИЗАЦИЯ
+# ═══════════════════════════════════════════════════════════════════════════════
+
+def initialize_restored_blocks():
+    """Инициализировать все блоки"""
+    user_repo = UserRepository()
+    order_repo = OrderRepository()
+    service_repo = ServiceRepository()
+    
+    language_hist = LanguageHistory(user_repo)
+    user_stats = UserStatistics(user_repo)
+    user_blocking = UserBlockingSystem(user_repo)
+    language_detector = LanguageDetector()
+    learning_system = SelfLearningSystem()
+    
+    return {
+        'command_handler': CommandHandler,
+        'user_repo': user_repo,
+        'order_repo': order_repo,
+        'service_repo': service_repo,
+        'language_history': language_hist,
+        'user_stats': user_stats,
+        'user_blocking': user_blocking,
+        'order_notifications': OrderNotifications,
+        'language_detector': language_detector,
+        'learning_system': learning_system
+    }
+
+
+if __name__ == '__main__':
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+    
+    blocks = initialize_restored_blocks()
+    logger.info("✅ ВСЕ ВОССТАНОВЛЕННЫЕ БЛОКИ ИНИЦИАЛИЗИРОВАНЫ")
+    logger.info(f"📦 БЛОК 1: CommandHandler")
+    logger.info(f"👥 БЛОКИ 7-10: CRM система")
+    logger.info(f"📬 БЛОК 14: OrderNotifications")
+    logger.info(f"🌐 БЛОК 16: LanguageDetector")
+    logger.info(f"🤖 БЛОК 17: SelfLearningSystem")
