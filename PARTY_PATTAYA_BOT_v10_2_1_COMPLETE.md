@@ -4788,7 +4788,7 @@ async def generate_lead_report(
 
 ---
 
-# 📦 БЛОК 16: SELF-LEARNING ENGINE 🆕
+# 📦 БЛОК 16: CUSTOMER SUCCESS AGENT 🆕
 # 📅 Статус: ⏳ В РАЗРАБОТКЕ
 # 📊 Размер: ~30KB | Функций: 10
 # 🤖 Тип: ML Pipeline
