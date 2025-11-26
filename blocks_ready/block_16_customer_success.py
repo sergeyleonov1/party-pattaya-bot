@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 """
 ╔══════════════════════════════════════════════════════════════════════════════╗
-║                         BLOCK 17: CUSTOMER SUCCESS AGENT                     ║
+║                         BLOCK 16: CUSTOMER SUCCESS AGENT                     ║
 ║                          Party Pattaya Bot v10.2.1                           ║
 ║                                                                              ║
 ║  Функций: 7 | Автор: Сергей Леонов | Статус: PRODUCTION                     ║
@@ -955,7 +955,7 @@ async def generate_nps_report(period: str = "month", include_trends: bool = True
 # ═══════════════════════════════════════════════════════════════════════════════
 
 if __name__ == "__main__":
-    print("BLOCK 17: CUSTOMER SUCCESS AGENT - Party Pattaya Bot v10.2.1")
+    print("BLOCK 16: CUSTOMER SUCCESS AGENT - Party Pattaya Bot v10.2.1")
     print("Функций: 7 | Статус: PRODUCTION READY")
     print("\nФункции:")
     print("  1. onboard_customer - онбординг клиента")
@@ -965,4 +965,4 @@ if __name__ == "__main__":
     print("  5. handle_escalation - обработка эскалаций")
     print("  6. collect_feedback - сбор обратной связи")
     print("  7. generate_nps_report - NPS отчёт")
-    print("\nИмпорт: from block_17_customer_success import *")
+    print("\nИмпорт: from block_16_customer_success import *")
