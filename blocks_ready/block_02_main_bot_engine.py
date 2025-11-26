@@ -1374,9 +1374,7 @@ async def shutdown_bot(
         
         # Уведомление администраторов
         if notify_admins and bot and STATE.admin_ids:
-            shutdown_text = f"🛑 <b>Bot shutting down</b>
-
-Reason: {reason or 'Manual shutdown'}"
+            shutdown_text = f"🛑 <b>Bot shutting down</b>\nReason: {reason or 'Manual shutdown'}"
             for admin_id in STATE.admin_ids:
                 try:
                     await send_message_safe(bot, admin_id, shutdown_text)
